@@ -45,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="scrollbar-thin">
       <body
-        // wotdisconnected="true"
+        wotdisconnected="true"
         className={`${geistSans.variable} ${geistMono.variable} antialiased scrollbar-thin `}
       >
         <NextTopLoader

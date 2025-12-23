@@ -10,22 +10,21 @@ import {
   Building2,
   MessageCircle,
   ArrowRight,
+  ChevronDown,
+  ArrowBigDownDash,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Flag from "react-flagkit";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import { cn } from "@/shared/utils";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/shared/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
-import { ITender } from "../../types/tender.type";
 
-export function TenderCardManagers({
+import { useRouter } from "next/navigation";
+import { ITender } from "@/features/log/types/tender.type";
+import api from "@/shared/api/instance.api";
+import { Button } from "@/shared/components/ui";
+
+export function TenderCardClients({
   cargo,
   onOpenDetails,
 }: {
@@ -45,24 +44,14 @@ export function TenderCardManagers({
 
   const isMobile = windowWidth <= 768;
 
-  // const fromPoints = cargo.tender_route?.filter(
-  //   (r) => r.ids_point === "LOAD_FROM"
-  // ) || [];
-
-  // const toPoints = cargo.tender_route?.filter(
-  //   (r) => r.ids_point === "LOAD_TO"
-  // ) || [];
-
   const trailerList =
     cargo.tender_trailer?.map((t) => t.trailer_type_name).join(", ") || "-";
   const trailerLoadList =
     cargo.tender_load?.map((t) => t.load_type_name).join(", ") || "-";
   console.log(trailerLoadList, "LAOD LIST");
 
-  const carCount = cargo.car_count ?? 0;
+  const carCount = cargo.car_count_actual ?? 0;
   const carCountActual = cargo.car_count_actual ?? 0;
-  const carCountClosed = cargo.car_count_closed ?? 0;
-  const carCountCanceled = cargo.car_count_canceled ?? 0;
 
   const weight = cargo.weight ?? 0;
   const volume = cargo.volume ?? 0;
@@ -86,18 +75,16 @@ export function TenderCardManagers({
   const border = cargo.tender_route.filter((p) => p.ids_point === "BORDER");
   const toPoints = cargo.tender_route.filter((p) => p.ids_point === "LOAD_TO");
 
-  console.log(fromPoints, "FROM POINTS");
-
   return (
     <Card
       className={cn(
         "w-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800",
         "hover:shadow-md transition-all duration-200 rounded-lg cursor-pointer overflow-hidden"
       )}
-      onClick={onOpenDetails}
+      onDoubleClick={onOpenDetails}
     >
       {/* HEADER */}
-      <CardHeader className="flex justify-between items-center p-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40">
+      <CardHeader className="flex justify-between items-center p-1 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40">
         <div className="flex items-center justify-between w-full gap-2">
           <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
             Тендер № {cargo.id ?? "-"} ({cargo.tender_type})
@@ -106,25 +93,6 @@ export function TenderCardManagers({
           <span className="text-gray-400 text-sm">
             {formattedStartDate} - {formattedEndDate}
           </span>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <GripVertical className="cursor-pointer text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" />
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem
-                onClick={() => router.push(`/log/tender/edit/${cargo.id}`)}
-              >
-                Редагувати
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => console.log("Видалити", cargo.id)}
-              >
-                Видалити
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </CardHeader>
 
@@ -137,111 +105,122 @@ export function TenderCardManagers({
           )}
         >
           {/* FROM */}
-          <div className="p-3 flex items-center gap-2">
+          <div className="p-3 flex flex-col items-center gap-2">
+            {fromPoints.length > 0 ? (
+              <span className={`text-xs text-teal-400`}>Завантаження</span>
+            ) : null}
             {fromPoints.length
               ? fromPoints.map((p) => (
-                  <span
+                  <div
                     key={p.id}
                     className="flex items-center gap-1 font-medium"
                   >
                     <Flag country={p.ids_country ?? "UA"} size={16} />
                     {p.city || "-"}
-                  </span>
+                  </div>
                 ))
               : "-"}
           </div>
           {/* ZAMYTNENNYA */}
-          <div className="p-3 flex items-center gap-2">
+
+          <div className="p-3 flex flex-col items-center gap-2">
+            {customUp.length > 0 ? (
+              <span className={`text-xs text-teal-400`}>Замитнення</span>
+            ) : null}
             {fromPoints.length
               ? customUp.map((p) => (
-                  <span
+                  <div
                     key={p.id}
                     className="flex items-center gap-1 font-medium"
                   >
                     <Flag country={p.ids_country ?? "UA"} size={16} />
                     {p.city || "-"}
-                  </span>
+                  </div>
                 ))
               : "-"}
           </div>
           {/* BORDER */}
-          <div className="p-3 flex items-center gap-2">
+          <div className="p-3 flex flex-col items-center gap-2">
+            {border.length > 0 ? (
+              <span className={`text-xs text-teal-400`}>Кордон / Перехід</span>
+            ) : null}
             {fromPoints.length
               ? border.map((p) => (
-                  <span
+                  <div
                     key={p.id}
                     className="flex items-center gap-1 font-medium"
                   >
                     <Flag country={p.ids_country ?? "UA"} size={16} />
                     {p.city || "-"}
-                  </span>
+                  </div>
                 ))
               : "-"}
           </div>
           {/* CUSTOM DOWN - ROZMYTNENNYA */}
-          <div className="p-3 flex items-center gap-2">
+          <div className="p-3 flex flex-col items-center gap-2">
+            {customDown.length > 0 ? (
+              <span className={`text-xs text-teal-400`}>Розмитнення</span>
+            ) : null}
             {fromPoints.length
               ? customDown.map((p) => (
-                  <span
+                  <div
                     key={p.id}
                     className="flex items-center gap-1 font-medium"
                   >
                     <Flag country={p.ids_country ?? "UA"} size={16} />
                     {p.city || "-"}
-                  </span>
+                  </div>
                 ))
               : "-"}
           </div>
           {/* TO */}
-          <div className="p-3 flex items-center gap-2">
+          <div className="p-3 flex flex-col items-center gap-2">
+            {toPoints.length > 0 ? (
+              <span className={`text-xs text-teal-400`}>Розвантаження</span>
+            ) : null}
             {toPoints.length
               ? toPoints.map((p) => (
-                  <span key={p.id} className="flex items-center gap-1">
+                  <div key={p.id} className="flex items-center gap-1">
                     <Flag country={p.ids_country ?? "UA"} size={16} />
                     {p.city || "-"}
-                  </span>
+                  </div>
                 ))
               : "-"}
           </div>
 
-          {/* AUTOS */}
-          <div className="p-3 flex flex-col gap-1 text-gray-700 dark:text-gray-300">
-            <div>
-              <Truck className="w-4 h-4 text-green-600 inline-block" />{" "}
-              {carCount} авт.
-            </div>
-            {carCount > 1 && (
-              <div>
-                Фактично: {carCountActual} | Закрито: {carCountClosed} |
-                Скасовано: {carCountCanceled}
-              </div>
-            )}
-          </div>
-
           {/* WEIGHT / VOLUME */}
           <div className="p-3 flex flex-col gap-1 text-gray-700 dark:text-gray-300">
+            {/* AUTOS */}
+            <div className=" flex flex-col gap-1 text-gray-700 dark:text-gray-300">
+              <div>
+                <Truck className="w-4 h-4 text-green-600 inline-block" />{" "}
+                {carCount} авт.
+              </div>
+            </div>
             <div>
               <ClipboardList className="w-4 h-4 text-amber-600 inline-block" />{" "}
-              {weight} кг
+              {weight} т.
             </div>
             <div>Об'єм: {volume} м³</div>
-          </div>
-
-          {/* TRAILERS */}
-          <div className="flex flex-col">
-            <div className="p-3 text-xs text-gray-700 dark:text-gray-300">
-              {trailerList}
-            </div>
-            <div className="p-3 text-xs text-gray-700 dark:text-gray-300">
-              {trailerLoadList}
+            {/* TRAILERS */}
+            <div className="flex flex-col">
+              <div className=" text-xs text-gray-700 dark:text-gray-300">
+                {trailerList}
+              </div>
+              <div className=" text-xs text-gray-700 dark:text-gray-300">
+                {trailerLoadList}
+              </div>
             </div>
           </div>
 
           {/* CARGO + NOTES */}
-          <div className="p-3 max-h-16 overflow-y-auto text-gray-800 dark:text-gray-200">
+          <div className="p-3 max-h-40 overflow-y-auto text-gray-800 dark:text-gray-200 text-xs ">
             {cargo.cargo || "-"}
             {cargo.notes && (
-              <span className="block text-xs opacity-70">{cargo.notes}</span>
+              <div>
+                <h3 className="text-xs">Примітки</h3>
+                <span className="block text-xs opacity-70">{cargo.notes}</span>
+              </div>
             )}
           </div>
 
@@ -251,21 +230,39 @@ export function TenderCardManagers({
             <span className="truncate">{cargo.author || "-"}</span>
           </div>
 
-          {/* COMPANY */}
-          <div className="p-3 flex items-center gap-1 text-gray-700 dark:text-gray-300">
-            <Building2 className="w-4 h-4" />
-            <span className="truncate">{cargo.company_name || "-"}</span>
-          </div>
-
           {/* COST */}
-          <div className="p-3 text-gray-700 dark:text-gray-300">
-            {cargo.cost_start} {cargo.valut_name}{" "}
-            {cargo.without_vat ? "(без ПДВ)" : ""}
+          <div>
+            <div className="p-3 text-gray-700 dark:text-gray-300">
+              {cargo.price_start} {cargo.valut_name?.toUpperCase()}{" "}
+              {cargo.without_vat ? "(без ПДВ)" : ""}
+            </div>
+            {cargo.price_proposed && (
+              <div className="p-3 text-red-700 dark:text-red-300">
+                {cargo.price_proposed} {cargo.valut_name?.toUpperCase()}{" "}
+                {cargo.without_vat ? "(без ПДВ)" : ""}
+              </div>
+            )}
           </div>
 
-          {/* STATUS */}
+          {/* Buttons */}
+
           <div className="p-3 text-gray-700 dark:text-gray-300">
-            {cargo.tender_status || "-"}
+            <Button
+              onClick={async () => {
+                await api.post("/tender/set-rate", {
+                  id_tender: cargo.id,
+                  ids_redemption_price: "reduction",
+                  price_proposed: cargo.price_next,
+                  notes: "---",
+                  car_count: 1,
+                });
+              }}
+              variant="default"
+              className="flex items-center gap-2 rounded-xl px-6 py-5 text-base shadow-md hover:shadow-lg transition"
+            >
+              <span>Підтвердити {cargo?.price_next}</span>
+              <ArrowBigDownDash className="h-5 w-5 opacity-80" />
+            </Button>
           </div>
         </div>
 
@@ -294,10 +291,6 @@ export function TenderCardManagers({
                 <Truck className="w-4 h-4 text-green-600 inline-block" />{" "}
                 {carCount} авт.
               </div>
-              <div>
-                Фактично: {carCountActual} | Закрито: {carCountClosed} |
-                Скасовано: {carCountCanceled}
-              </div>
             </div>
             <div className="flex flex-col text-gray-700 dark:text-gray-300">
               <div>
@@ -323,23 +316,31 @@ export function TenderCardManagers({
             </p>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-slate-700">
+          <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-slate-700 ">
             <div className="flex flex-col gap-1 text-gray-700 dark:text-gray-300">
               <div>
                 <User className="w-4 h-4 text-rose-600" /> {cargo.author || "-"}
               </div>
               <div>
-                {cargo.cost_start} {cargo.valut_name}{" "}
+                {cargo.price_start} {cargo.valut_name?.toUpperCase()}{" "}
                 {cargo.without_vat ? "(без ПДВ)" : ""}
               </div>
-              <div>{cargo.tender_status}</div>
+              {/* <div>{cargo.tender_status}</div> */}
             </div>
             <div className="flex flex-col gap-1 text-gray-600 dark:text-gray-400">
-              <div>
-                <Building2 className="w-4 h-4" /> {cargo.company_name || "-"}
-              </div>
               <div>Тип: {cargo.tender_type}</div>
             </div>
+          </div>
+          {/* Buttons */}
+
+          <div className="p-3 text-gray-700 dark:text-gray-300">
+            <button
+              onClick={async () => {
+                await api.post("/tender/set-rate");
+              }}
+            >
+              Підтвердити {}
+            </button>
           </div>
         </div>
       </CardContent>

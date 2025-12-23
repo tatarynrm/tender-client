@@ -73,18 +73,18 @@ const links: MenuItem[] = [
     name: "Тендери",
     icon: LayoutList,
     children: [
-      { name: "Активні", href: "/dashboard/tenders/active", icon: Shield },
+      { name: "Активні", href: "/dashboard/tender/active", icon: Shield },
       {
         name: "Приймаю участь",
-        href: "/dashboard/tenders/my",
+        href: "/dashboard/tender/my",
         icon: ShieldPlus,
       },
       {
         name: "Майбутні",
-        href: "/dashboard/tenders/archive",
+        href: "/dashboard/tender/archive",
         icon: FileArchive,
       },
-      { name: "Архів", href: "/dashboard/tenders/archive", icon: FileArchive },
+      { name: "Архів", href: "/dashboard/tender/archive", icon: FileArchive },
     ],
   },
   {

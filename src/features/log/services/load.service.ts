@@ -5,6 +5,6 @@ import api from "@/shared/api/instance.api";
 export const loadService = {
   getLoads: async (): Promise<LoadApiItem[]> => {
     const { data } = await api.get("/crm/load/list");
-    return data.data.list;
+    return data.content
   },
 };

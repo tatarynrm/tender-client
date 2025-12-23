@@ -1,9 +1,10 @@
+import { ITender } from "@/features/log/types/tender.type";
 import api from "@/shared/api/instance.api";
-import { ITender } from "../types/tender.type";
 
-export const tenderService = {
+
+export const tenderClientsService = {
   getTenders: async (): Promise<ITender[]> => {
-    const { data } = await api.get("/tender/list");
+    const { data } = await api.get("/tender/client-list");
     return data.content;
   },
 

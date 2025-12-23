@@ -41,7 +41,8 @@ export const UsersTable = React.memo(() => {
 
   const [pageSize] = useState(10); // можна зробити динамічним
 
-  const { users, pageCount, isLoading } = useGetUserList(currentPage, pageSize);
+  const { users,pageCount, isLoading } = useGetUserList(currentPage, pageSize);
+console.log(users,'USER 45 line');
 
   const togglePhones = (id: number) => {
     setExpandedPhones((prev) => ({ ...prev, [id]: !prev[id] }));

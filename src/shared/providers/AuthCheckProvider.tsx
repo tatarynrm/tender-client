@@ -10,15 +10,19 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { IUserProfile } from "../types/user.types";
-import { connectSocket } from "@/sockets/socketManager";
+import {
+  connectSocket,
+  disconnectSocket,
+  setSocketUserId,
+} from "@/sockets/socketManager";
 
 interface AuthContextType {
   profile?: IUserProfile;
-  setProfile: React.Dispatch<React.SetStateAction<IUserProfile | undefined>>; // 🟢 додаємо типізацію для setProfile
+  setProfile: React.Dispatch<React.SetStateAction<IUserProfile | undefined>>;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  setProfile: () => {}, // значення за замовчуванням (щоб не було помилки)
+  setProfile: () => {},
 });
 
 export const AuthCheckProvider = ({
@@ -32,24 +36,43 @@ export const AuthCheckProvider = ({
   const [profile, setProfile] = useState<IUserProfile | undefined>(
     initialProfile
   );
-  const socketRef = useRef<any>(null);
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Використовуємо useEffect, щоб налаштувати підключення до сокету
   useEffect(() => {
-    if (!profile || socketRef.current) return; // ⚡ запобігаємо повторному підключенню
+    if (!profile?.id) return; // Чекаємо, поки профіль буде доступний
 
-    const socket = connectSocket("user", { query: { userId: profile.id } });
-    socketRef.current = socket;
+    // Встановлюємо userId для сокета
+    setSocketUserId(profile.id);
+    console.log(profile, "PROFILE 47");
 
+    // Підключаємося до сокету
+    const socket = connectSocket("user");
+
+    // Функція для перевірки серця
+    const sendHeartbeat = () => {
+      if (socket.connected && document.visibilityState === "visible") {
+        socket.emit("heartbeat");
+      }
+    };
+
+    // Обробник для блокування користувача
     socket.on("USER_BLOCKED", () => {
-      setProfile((prev) => prev && { ...prev, is_blocked: true });
       router.replace("/blocked");
     });
 
+    // Інтервал для серця
+    const interval = setInterval(sendHeartbeat, 25000);
+    document.addEventListener("visibilitychange", sendHeartbeat);
+
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", sendHeartbeat);
+      socket.off("USER_BLOCKED");
+      // ❌ disconnectSocket("user");
+      // ❌ setSocketUserId(null);
     };
-  }, [profile, router]);
+  }, [profile?.id, router]);
 
   return (
     <AuthContext.Provider value={{ profile, setProfile }}>

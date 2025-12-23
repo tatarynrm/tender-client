@@ -1,122 +1,51 @@
-// "use client";
-// import { io, Socket } from "socket.io-client";
-
-// type SocketMap = {
-//   user?: Socket;
-//   tender?: Socket;
-//   chat?: Socket;
-//   telegram?: Socket;
-//   load?: Socket;
-// };
-
-// const sockets: SocketMap = {};
-
-// export const connectSocket = (
-//   namespace: keyof SocketMap,
-//   options?: any
-// ): Socket => {
-//   if (sockets[namespace]) return sockets[namespace]!;
-
-//   const url = `${process.env.NEXT_PUBLIC_SERVER_URL}/${namespace}`;
-//   const socket = io(url, {
-//     ...options,
-//     reconnection: true, // Забезпечує автоматичне перепідключення
-//     reconnectionAttempts: Infinity, // Безліч спроб перепідключення
-//     reconnectionDelay: 1000, // Затримка між спробами перепідключення
-//     reconnectionDelayMax: 5000, // Максимальна затримка для перепідключення
-//   });
-
-//   sockets[namespace] = socket;
-
-//   // Відновлюємо підключення, коли вікно знову в фокусі
-//   window.addEventListener("focus", () => {
-//     // Перевіряємо, чи сокет підключений
-//     if (!sockets[namespace]?.connected) {
-//       console.log(`Reconnecting to socket ${namespace}`);
-//       socket.connect();
-//     }
-//   });
-
-//   // Якщо сокет не підключений, намагаємось підключити його
-//   if (!socket.connected) {
-//     socket.connect();
-//   }
-
-//   return socket;
-// };
-
-// export const getSocket = (namespace: keyof SocketMap): Socket | undefined => {
-//   return sockets[namespace];
-// };
-
-// export const disconnectSocket = (namespace: keyof SocketMap) => {
-//   sockets[namespace]?.disconnect();
-//   delete sockets[namespace];
-// };
-
-// export const disconnectAllSockets = () => {
-//   (Object.keys(sockets) as (keyof SocketMap)[]).forEach((ns) => {
-//     sockets[ns]?.disconnect();
-//     delete sockets[ns];
-//   });
-// };
 "use client";
+
 import { io, Socket } from "socket.io-client";
 
-type SocketMap = {
-  user?: Socket;
-  tender?: Socket;
-  chat?: Socket;
-  telegram?: Socket;
-  load?: Socket; // Сокет для namespace "load"
+type Namespace = "user" | "tender" | "chat" | "load";
+
+interface ManagedSocket {
+  socket: Socket;
+  userId: string;
+}
+
+const sockets: Partial<Record<Namespace, ManagedSocket>> = {};
+let currentUserId: string | null = null;
+
+// Встановлюємо userId
+export const setSocketUserId = (userId: string | null) => {
+  currentUserId = userId;
 };
 
-const sockets: SocketMap = {};
+// Підключення сокета
+export const connectSocket = (namespace: Namespace): Socket => {
+  if (!currentUserId) throw new Error("UserId не встановлено. Виклич setSocketUserId() перед підключенням.");
 
-export const connectSocket = (
-  namespace: keyof SocketMap,
-  options?: any
-): Socket => {
-  if (sockets[namespace]) return sockets[namespace]!;
+  const existing = sockets[namespace];
+  if (existing && existing.userId === currentUserId) return existing.socket;
 
-  const url = `${process.env.NEXT_PUBLIC_SERVER_URL}/${namespace}`;
-  const socket = io(url, {
-    ...options,
-    reconnection: true,
-    reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-  });
-
-  sockets[namespace] = socket;
-
-  // Відновлюємо підключення, коли вікно знову в фокусі
-  window.addEventListener("focus", () => {
-    if (!sockets[namespace]?.connected) {
-      console.log(`Reconnecting to socket ${namespace}`);
-      socket.connect();
-    }
-  });
-
-  if (!socket.connected) {
-    socket.connect();
+  if (existing) {
+    existing.socket.disconnect();
+    delete sockets[namespace];
   }
 
+  const socket = io(`${process.env.NEXT_PUBLIC_SERVER_URL}/${namespace}`, {
+    auth: { userId: currentUserId },
+    transports: ["websocket"],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+  });
+
+  sockets[namespace] = { socket, userId: currentUserId };
   return socket;
 };
 
-export const getSocket = (namespace: keyof SocketMap): Socket | undefined => {
-  return sockets[namespace];
-};
+// Отримати існуючий сокет (може бути undefined)
+export const getSocket = (namespace: Namespace): Socket | undefined =>
+  sockets[namespace]?.socket;
 
-export const disconnectSocket = (namespace: keyof SocketMap) => {
-  sockets[namespace]?.disconnect();
+// Відключити сокет
+export const disconnectSocket = (namespace: Namespace) => {
+  sockets[namespace]?.socket.disconnect();
   delete sockets[namespace];
-};
-
-export const disconnectAllSockets = () => {
-  (Object.keys(sockets) as (keyof SocketMap)[]).forEach((ns) => {
-    sockets[ns]?.disconnect();
-    delete sockets[ns];
-  });
 };

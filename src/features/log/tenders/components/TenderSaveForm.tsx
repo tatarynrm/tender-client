@@ -300,31 +300,31 @@ export default function TenderSaveForm({
           "/tender/form-data/getCreateTenderFormData"
         );
         setTruckList(
-          data.data.trailer_type_dropdown.map((t: any) => ({
+          data.content.trailer_type_dropdown.map((t: any) => ({
             value: t.ids,
             label: t.value,
           }))
         );
         setLoadList(
-          data.data.load_type_dropdown.map((t: any) => ({
+          data.content.load_type_dropdown.map((t: any) => ({
             value: t.ids,
             label: t.value,
           }))
         );
         setTenderType(
-          data.data.tender_type_dropdown.map((t: any) => ({
+          data.content.tender_type_dropdown.map((t: any) => ({
             value: t.ids,
             label: t.value,
           }))
         );
         setTenderPermission(
-          data.data.load_permission_dropdown.map((t: any) => ({
+          data.content.load_permission_dropdown.map((t: any) => ({
             value: t.ids,
             label: t.value,
           }))
         );
         setValut(
-          data.data.valut_dropdown.map((t: any) => ({
+          data.content.valut_dropdown.map((t: any) => ({
             value: t.ids,
             label: t.ids,
           }))

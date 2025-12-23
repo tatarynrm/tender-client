@@ -24,7 +24,7 @@ export interface UserFromCompany {
 // 👇 Підтримка пагінації
 export const useGetUserList = (page?: number, pageSize?: number) => {
   const currentPage = page ?? 1; // якщо undefined -> 1
-  const currentPageSize = pageSize ?? 10; // якщо undefined -> 10
+  const currentPageSize = pageSize ?? 1; // якщо undefined -> 10
 
   const { data, isLoading, refetch, error } = useQuery({
     queryKey: ["company-users", currentPage, currentPageSize],
@@ -36,11 +36,11 @@ export const useGetUserList = (page?: number, pageSize?: number) => {
         },
       });
 
-      const response = data.data;
+      console.log(data, "RESPONSE");
 
       return {
-        users: response.list as UserFromCompany[],
-        pageCount: response.list_props.pagination.page_count,
+        users: data.content as UserFromCompany[],
+        pageCount: data.props.pagination.page_count
       };
     },
   });
