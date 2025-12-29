@@ -1,61 +1,61 @@
-// src/features/dashboard/settings/ui/SettingsTabs.tsx
-"use client"
+// // src/features/dashboard/settings/ui/SettingsTabs.tsx
+// "use client"
 
-import { useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+// import { useEffect } from "react"
+// import { useRouter, useSearchParams } from "next/navigation"
 
-import { ProfileTab } from "./ProfileTab"
-import { SecurityTab } from "./SecurityTab"
-import { NotificationsTab } from "./NotificationTab"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui"
-import TelegramTab from "./TelegramTab"
+// import { ProfileTab } from "./ProfileTab"
+// import { SecurityTab } from "./SecurityTab"
+// import { NotificationsTab } from "./NotificationTab"
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui"
 
-export function SettingsTabs() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
 
-  // Отримуємо активний таб або дефолтний
-  const activeTab = searchParams.get("tab") || "profile"
+// export function SettingsTabs() {
+//   const router = useRouter()
+//   const searchParams = useSearchParams()
 
-  // Якщо параметра tab немає — додаємо його в URL при завантаженні
-  useEffect(() => {
-    if (!searchParams.get("tab")) {
-      const params = new URLSearchParams(searchParams)
-      params.set("tab", "profile")
-      router.replace(`?${params.toString()}`, { scroll: false })
-    }
-  }, [searchParams, router])
+//   // Отримуємо активний таб або дефолтний
+//   const activeTab = searchParams.get("tab") || "profile"
 
-  const handleTabChange = (value: string) => {
-    const params = new URLSearchParams(searchParams)
-    params.set("tab", value)
-    router.replace(`?${params.toString()}`, { scroll: false })
-  }
+//   // Якщо параметра tab немає — додаємо його в URL при завантаженні
+//   useEffect(() => {
+//     if (!searchParams.get("tab")) {
+//       const params = new URLSearchParams(searchParams)
+//       params.set("tab", "profile")
+//       router.replace(`?${params.toString()}`, { scroll: false })
+//     }
+//   }, [searchParams, router])
 
-  return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList>
-        <TabsTrigger value="profile">Профіль</TabsTrigger>
-        <TabsTrigger value="security">Безпека</TabsTrigger>
-        <TabsTrigger value="notifications">Сповіщення</TabsTrigger>
-        <TabsTrigger value="telegram">Telegram</TabsTrigger>
-      </TabsList>
+//   const handleTabChange = (value: string) => {
+//     const params = new URLSearchParams(searchParams)
+//     params.set("tab", value)
+//     router.replace(`?${params.toString()}`, { scroll: false })
+//   }
 
-      <TabsContent value="profile">
-        <ProfileTab />
-      </TabsContent>
+//   return (
+//     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+//       <TabsList>
+//         <TabsTrigger value="profile">Профіль</TabsTrigger>
+//         <TabsTrigger value="security">Безпека</TabsTrigger>
+//         <TabsTrigger value="notifications">Сповіщення</TabsTrigger>
+//         <TabsTrigger value="telegram">Telegram</TabsTrigger>
+//       </TabsList>
 
-      <TabsContent value="security">
-        <SecurityTab />
-      </TabsContent>
+//       <TabsContent value="profile">
+//         <ProfileTab />
+//       </TabsContent>
 
-      <TabsContent value="notifications">
-        <NotificationsTab />
-      </TabsContent>
+//       <TabsContent value="security">
+//         <SecurityTab />
+//       </TabsContent>
 
-      <TabsContent value="telegram">
-        <TelegramTab />
-      </TabsContent>
-    </Tabs>
-  )
-}
+//       <TabsContent value="notifications">
+//         <NotificationsTab />
+//       </TabsContent>
+
+//       <TabsContent value="telegram">
+//         <TelegramTab />
+//       </TabsContent>
+//     </Tabs>
+//   )
+// }

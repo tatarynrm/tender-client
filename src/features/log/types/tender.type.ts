@@ -92,8 +92,17 @@ export interface ITender {
   without_vat: boolean;
   duration_continue: boolean;
 
+  car_count:number;
   car_count_actual: number;
+  car_count_closed:number;
+  car_count_canceled:number;
 
+
+  company_name:string;
+
+  cost_start:number;
+
+  tender_status:string;
   valut_name?:string;
 
   tender_type?:string;
@@ -113,6 +122,8 @@ export interface ITenderLoad {
 }
 export interface ITenderRoute {
   id: number;
+
+  locality?:string;
 
   lat: number | null;
   lon: number | null;

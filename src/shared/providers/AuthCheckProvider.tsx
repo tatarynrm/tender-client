@@ -7,14 +7,10 @@ import {
   useEffect,
   useState,
   useRef,
+  use,
 } from "react";
 import { useRouter } from "next/navigation";
 import { IUserProfile } from "../types/user.types";
-import {
-  connectSocket,
-  disconnectSocket,
-  setSocketUserId,
-} from "@/sockets/socketManager";
 
 interface AuthContextType {
   profile?: IUserProfile;
@@ -37,43 +33,29 @@ export const AuthCheckProvider = ({
     initialProfile
   );
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  // setSocketUserId(profile.id);
 
-  // Використовуємо useEffect, щоб налаштувати підключення до сокету
+  // // Використовуємо useEffect, щоб налаштувати підключення до сокету
+  // useEffect(() => {
+  //   if (!profile?.id) return;
+
+  //   console.log('this socket',socket);
+
+  //   // setSocketUserId(profile.id); // після логіну
+  //   socket?.on("USER_BLOCKED", () => {
+  //     router.replace("/blocked");
+  //   });
+
+  //   return () => {
+  //     socket?.off("USER_BLOCKED");
+  //   };
+  // }, [profile?.id]);
+
   useEffect(() => {
-    if (!profile?.id) return; // Чекаємо, поки профіль буде доступний
-
-    // Встановлюємо userId для сокета
-    setSocketUserId(profile.id);
-    console.log(profile, "PROFILE 47");
-
-    // Підключаємося до сокету
-    const socket = connectSocket("user");
-
-    // Функція для перевірки серця
-    const sendHeartbeat = () => {
-      if (socket.connected && document.visibilityState === "visible") {
-        socket.emit("heartbeat");
-      }
-    };
-
-    // Обробник для блокування користувача
-    socket.on("USER_BLOCKED", () => {
-      router.replace("/blocked");
-    });
-
-    // Інтервал для серця
-    const interval = setInterval(sendHeartbeat, 25000);
-    document.addEventListener("visibilitychange", sendHeartbeat);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", sendHeartbeat);
-      socket.off("USER_BLOCKED");
-      // ❌ disconnectSocket("user");
-      // ❌ setSocketUserId(null);
-    };
-  }, [profile?.id, router]);
-
+    if (profile?.id) {
+      localStorage.setItem("socket", profile.id); // Зберігаємо userId в localStorage після логіну
+    }
+  }, [profile]);
   return (
     <AuthContext.Provider value={{ profile, setProfile }}>
       {children}

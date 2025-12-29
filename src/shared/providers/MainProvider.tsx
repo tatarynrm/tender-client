@@ -6,6 +6,8 @@ import { ToastProvider } from "./ToastProvider";
 
 import { AuthCheckProvider } from "./AuthCheckProvider";
 import ClientOnlyProvider from "./ClientOnlyProvider";
+import { SocketProvider } from "./SocketProvider";
+import { AuthCheck } from "./AuthCheck";
 
 export function MainProvider({ children }: PropsWithChildren<unknown>) {
   return (
@@ -18,7 +20,10 @@ export function MainProvider({ children }: PropsWithChildren<unknown>) {
         storageKey="ictender-theme"
       >
         <AuthCheckProvider>
-          <ClientOnlyProvider>{children}</ClientOnlyProvider>
+          <AuthCheck/>
+          <SocketProvider>
+            <ClientOnlyProvider>{children}</ClientOnlyProvider>
+          </SocketProvider>
         </AuthCheckProvider>
         <ToastProvider />
       </ThemeProvider>

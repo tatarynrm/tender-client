@@ -48,7 +48,6 @@ export function TenderCardClients({
     cargo.tender_trailer?.map((t) => t.trailer_type_name).join(", ") || "-";
   const trailerLoadList =
     cargo.tender_load?.map((t) => t.load_type_name).join(", ") || "-";
-  console.log(trailerLoadList, "LAOD LIST");
 
   const carCount = cargo.car_count_actual ?? 0;
   const carCountActual = cargo.car_count_actual ?? 0;

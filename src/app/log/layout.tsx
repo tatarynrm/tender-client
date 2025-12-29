@@ -4,6 +4,7 @@ import LogShell from "@/features/log/LogShell";
 import { AuthCheckProvider } from "@/shared/providers/AuthCheckProvider";
 import { getProfile } from "@/shared/server/getProfile";
 
+
 export default async function LogLayout({
   children,
 }: {
@@ -17,7 +18,9 @@ export default async function LogLayout({
 
   return (
     <AuthCheckProvider profile={profile}>
-      <LogShell profile={profile}>{children}</LogShell>
+  
+        <LogShell profile={profile}>{children}</LogShell>
+ 
     </AuthCheckProvider>
   );
 }

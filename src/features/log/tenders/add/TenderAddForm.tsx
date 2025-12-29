@@ -35,8 +35,9 @@ import { Minus, Plus } from "lucide-react";
 import { MyTooltip } from "@/shared/components/Tooltips/MyTooltip";
 import { useRouter } from "next/navigation";
 
-import { connectSocket, getSocket } from "@/sockets/socketManager";
 import { useAuth } from "@/shared/providers/AuthCheckProvider";
+import { useSockets } from "@/shared/providers/SocketProvider";
+
 
 // ---------- Schemas ----------
 const routeSchema = z.object({
@@ -173,7 +174,7 @@ export default function TenderAddForm({
   const router = useRouter();
 
   const { profile } = useAuth();
-  const socket = connectSocket("load");
+  const {load} = useSockets();
 
   const form = useForm<CargoServerFormValues>({
     resolver: zodResolver(cargoServerSchema),

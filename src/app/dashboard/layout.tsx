@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import DashboardShell from "@/features/dashboard/DashboardShell";
 import { getProfile } from "@/shared/server/getProfile";
 import { AuthCheckProvider } from "@/shared/providers/AuthCheckProvider";
-import { SocketProvider } from "@/shared/providers/SocketProvider";
 
 export default async function DashboardLayout({
   children,
@@ -21,9 +20,7 @@ export default async function DashboardLayout({
   // 👤 Клієнт → допускаємо
   return (
     <AuthCheckProvider profile={profile!!}>
- 
-        <DashboardShell profile={profile}>{children}</DashboardShell>
-    
+      <DashboardShell profile={profile}>{children}</DashboardShell>
     </AuthCheckProvider>
   );
 }

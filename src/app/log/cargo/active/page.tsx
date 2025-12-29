@@ -9,13 +9,9 @@ import { CargoCard } from "@/features/log/active/ui/CargoCard";
 import { useLoads } from "@/features/log/hooks/useLoads";
 import Loader from "@/shared/components/Loaders/MainLoader";
 import { ErrorState } from "@/shared/components/Loaders/ErrorState";
-import {
-  connectSocket,
-  disconnectSocket,
-  getSocket,
-} from "@/sockets/socketManager";
+
 import { useAuth } from "@/shared/providers/AuthCheckProvider";
-import { useRefetchOnTrigger } from "@/sockets/hooks/useLoadRefetch";
+
 
 // 🔹 Тип даних із API
 export type LoadApiItem = {
@@ -65,10 +61,10 @@ export default function DashboardPage() {
     "dashboardGridCols",
     3
   );
-  const socket = connectSocket("user");
+
   const { loads, isLoading, error, refetch } = useLoads();
 
-  useRefetchOnTrigger();
+
 
   if (isLoading) return <Loader />;
   if (error) return <ErrorState />;

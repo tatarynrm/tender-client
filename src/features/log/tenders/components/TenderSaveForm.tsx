@@ -30,6 +30,7 @@ import { Minus, Plus } from "lucide-react";
 import { MyTooltip } from "@/shared/components/Tooltips/MyTooltip";
 import { useRouter } from "next/navigation";
 import DateTimePicker from "@/shared/components/Inputs/DatePicker";
+import { GoogleLocationInput } from "@/shared/components/google-location-input/GoogleLocationInput";
 
 // ---------- Schemas ----------
 const routeSchema = z.object({
@@ -46,6 +47,8 @@ const routeSchema = z.object({
   city: z.string().optional(),
   order_num: z.number(),
   customs: z.boolean().optional(),
+  lat: z.number().optional(),
+  lon: z.number().optional(),
 });
 
 const trailerSchema = z.object({
@@ -65,12 +68,12 @@ const tenderFormSchema = z
     notes: z.string().optional(),
     id_owner_company: z.number().nullable(),
     car_count: z.number().min(1, "Мінімум 1 авто"),
-    cost_start: z.number().optional(),
-    step: z.number({ message: "Вкажіть крок ставки" }).optional(),
-    redemption_price: z.number().optional(), // ⬅ ДЛЯ REDEMTION
-    ids_type: z.enum(["GENERAL", "REDEMTION", "PRICE_REQUEST"]),
+    price_start: z.number().optional(),
+    price_step: z.number({ message: "Вкажіть крок ставки" }).optional(),
+    price_redemption: z.number().optional(), // ⬅ ДЛЯ REDEMTION
+    ids_type: z.enum(["GENERAL", "REDEMTION", "request_price"]),
     duration_continue: z.boolean(),
-    price_request: z.boolean(),
+    request_price: z.boolean(),
     without_vat: z.boolean(),
     tender_route: z.array(routeSchema).min(1),
     tender_trailer: z.array(trailerSchema).min(1),
@@ -94,7 +97,7 @@ const tenderFormSchema = z
   .superRefine((data, ctx) => {
     /* ------- GENERAL ------- */
     if (data.ids_type === "GENERAL") {
-      if (!data.cost_start) {
+      if (!data.price_start) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Стартова ціна обов'язкова",
@@ -108,11 +111,11 @@ const tenderFormSchema = z
           path: ["ids_valut"],
         });
       }
-      if (!data.step) {
+      if (!data.price_step) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Крок ставки обов'язковий",
-          path: ["step"],
+          path: ["price_step"],
         });
       }
     }
@@ -128,12 +131,12 @@ const tenderFormSchema = z
       }
     }
 
-    /* ------- PRICE_REQUEST ------- */
-    // if (data.ids_type === "PRICE_REQUEST") {
+    /* ------- request_price ------- */
+    // if (data.ids_type === "request_price") {
     //   const forbidden = [
     //     "cost_start",
-    //     "step",
-    //     "redemption_price",
+    //     "price_step",
+    //     "price_redemption",
     //     "weight",
     //     "volume",
     //   ];
@@ -142,7 +145,7 @@ const tenderFormSchema = z
     //     if (data[field as keyof typeof data]) {
     //       ctx.addIssue({
     //         code: z.ZodIssueCode.custom,
-    //         message: `Поле ${field} не повинно бути в PRICE_REQUEST`,
+    //         message: `Поле ${field} не повинно бути в request_price`,
     //         path: [field],
     //       });
     //     }
@@ -256,10 +259,10 @@ export default function TenderSaveForm({
       id_owner_company: null,
       car_count: 1,
       // cost_start: 0,
-      // step: 0,
+      // price_step: 0,
       ids_type: "GENERAL",
       duration_continue: true,
-      price_request: false,
+      request_price: false,
       without_vat: true,
       tender_route: [
         { address: "", ids_point: "LOAD_FROM", order_num: 1, customs: false },
@@ -361,9 +364,9 @@ export default function TenderSaveForm({
       toast.success(isEdit ? "Тендер відредаговано!" : "Тендер створено!");
 
       if (!isNextTender) {
-        form.reset();
+        // form.reset();
       } else {
-        router.push("/log/tender/active");
+        // router.push("/log/tender/active");
       }
     } catch (err) {
       console.error(err);
@@ -482,6 +485,33 @@ export default function TenderSaveForm({
                       field.onChange(option?.value ?? null);
                       setCompanyLabel(option?.label ?? "");
                     }}
+                    styles={{
+                      option: (base, state) => ({
+                        ...base,
+                        color: "black", // 🔹 колір тексту у випадаючому списку
+                        backgroundColor: state.isFocused
+                          ? "rgba(0, 128, 128, 0.1)" // легкий teal при наведенні
+                          : "white", // фон опції
+                        cursor: "pointer",
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: "black", // 🔹 колір вибраного значення у полі
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: "black", // 🔹 колір введеного тексту при пошуку
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: "#666", // 🔹 колір placeholder’а
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: "white", // фон випадаючого списку
+                        zIndex: 10,
+                      }),
+                    }}
                   />
                 </FormControl>
               </FormItem>
@@ -499,7 +529,7 @@ export default function TenderSaveForm({
                     <FormItem className="flex-1">
                       <FormLabel>{`Адреса #${idx + 1}`}</FormLabel>
                       <FormControl>
-                        <NominatimInput
+                        {/* <NominatimInput
                           value={f.value ?? ""}
                           onChange={(addr, country, city) => {
                             // console.log(addr, country, city, "------------");
@@ -511,6 +541,36 @@ export default function TenderSaveForm({
                             );
                             setValue(`tender_route.${idx}.city`, city || "");
                             clearErrors(`tender_route.${idx}.address` || "");
+                          }}
+                        /> */}
+                        <GoogleLocationInput
+                          value={f.value ?? ""}
+                          onChange={(location) => {
+                            console.log(location, "Location");
+
+                            // формуємо addr для input
+                            const addr = location.street
+                              ? `${location.street}${
+                                  location.house ? `, ${location.house}` : ""
+                                }`
+                              : location.city || "";
+
+                            // оновлюємо input field
+                            f.onChange(addr);
+                            setValue(`tender_route.${idx}.lat`, location.lat);
+                            setValue(`tender_route.${idx}.lon`, location.lng);
+                            // оновлюємо country/city в формі
+                            setValue(
+                              `tender_route.${idx}.country`,
+                              location.countryCode || ""
+                            );
+                            setValue(
+                              `tender_route.${idx}.city`,
+                              location.city || ""
+                            );
+
+                            // очищаємо помилки
+                            clearErrors(`tender_route.${idx}.address`);
                           }}
                         />
                       </FormControl>
@@ -734,7 +794,7 @@ export default function TenderSaveForm({
             /> */}
             {/* <FormField
               control={control}
-              name="price_request"
+              name="request_price"
               render={({ field }) => (
                 <FormItem className="flex items-center gap-2">
                   <Switch
@@ -747,7 +807,7 @@ export default function TenderSaveForm({
             /> */}
           </div>
 
-          {/* Car count / Cost / Step */}
+          {/* Car count / Cost / price_step */}
           <div className="flex gap-4 flex-wrap">
             <FormField
               control={control}
@@ -822,7 +882,7 @@ export default function TenderSaveForm({
               <>
                 <FormField
                   control={control}
-                  name="cost_start"
+                  name="price_start"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Стартова ціна</FormLabel>
@@ -853,7 +913,7 @@ export default function TenderSaveForm({
                         <Select
                           // disabled={isLoadingRegister}
                           value={field.value?.toString() || ""}
-                          onValueChange={(val) => field.onChange((val))}
+                          onValueChange={(val) => field.onChange(val)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Вкажіть валюту" />
@@ -887,7 +947,7 @@ export default function TenderSaveForm({
                 />
                 <FormField
                   control={control}
-                  name="step"
+                  name="price_step"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Крок ставки</FormLabel>
@@ -914,7 +974,7 @@ export default function TenderSaveForm({
               <>
                 <FormField
                   control={control}
-                  name="cost_start"
+                  name="price_start"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Стартова ціна</FormLabel>
@@ -945,7 +1005,7 @@ export default function TenderSaveForm({
                         <Select
                           // disabled={isLoadingRegister}
                           value={field.value?.toString() || ""}
-                          onValueChange={(val) => field.onChange((val))}
+                          onValueChange={(val) => field.onChange(val)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Вкажіть валюту" />
@@ -979,7 +1039,7 @@ export default function TenderSaveForm({
                 />
                 <FormField
                   control={control}
-                  name="step"
+                  name="price_step"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Крок ставки</FormLabel>

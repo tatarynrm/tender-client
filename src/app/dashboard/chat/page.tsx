@@ -233,7 +233,7 @@ import {
   Textarea,
 } from "@/shared/components/ui";
 import { useAuth } from "@/shared/providers/AuthCheckProvider";
-import { connectSocket } from "@/sockets/socketManager";
+
 import { useEffect, useRef, useState, KeyboardEvent } from "react";
 
 interface Message {
@@ -254,34 +254,7 @@ export default function ChatComponent() {
   const [chatSocket, setChatSocket] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Підключення socket
-  useEffect(() => {
-    if (!profile?.id) return;
 
-    const socket = connectSocket("chat", { query: { userId: profile.id } });
-    setChatSocket(socket);
-
-    const handlers: [string, (msg: any) => void][] = [
-      ["message_to_user_group", handleMessage],
-      ["message_to_all", handleMessage],
-      ["message_received", handleMessage],
-      ["message_to_room", handleMessage],
-      [
-        "room_notification",
-        (msg: { message: string }) =>
-          handleMessage({
-            text: msg.message,
-            timestamp: new Date().toISOString(),
-          }),
-      ],
-    ];
-
-    handlers.forEach(([event, handler]) => socket.on(event, handler));
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [profile?.id]);
 
   const handleMessage = (msg: Message) => {
     setMessages((prev) => [...prev, msg]);

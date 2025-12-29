@@ -1,17 +1,20 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { loadService } from "../services/load.service";
-import { connectSocket } from "@/sockets/socketManager";
+
 import { LoadApiItem } from "@/app/log/cargo/active/page";
+import { useAuth } from "@/shared/providers/AuthCheckProvider";
+import { useSockets } from "@/shared/providers/SocketProvider";
 
 export const useLoads = () => {
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
-
+  const { load } = useSockets();
   const {
     data: loads = [],
     isLoading,
     error,
-    refetch
+    refetch,
   } = useQuery<LoadApiItem[]>({
     queryKey: ["loads"],
     queryFn: loadService.getLoads,
@@ -19,16 +22,16 @@ export const useLoads = () => {
   });
 
   useEffect(() => {
-    const socket = connectSocket("user");
+    if (!profile?.id) return;
 
     const handleNewLoad = () =>
       queryClient.invalidateQueries({ queryKey: ["loads"] });
 
-    socket.on("new_load", handleNewLoad);
+    load?.on("new_load", handleNewLoad);
     return () => {
-      socket.off("new_load", handleNewLoad);
+      load?.off("new_load", handleNewLoad);
     };
   }, [queryClient]);
 
-  return { loads, isLoading, error,refetch };
+  return { loads, isLoading, error, refetch };
 };

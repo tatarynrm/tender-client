@@ -12,6 +12,7 @@ import { TenderCardManagers } from "@/features/log/tenders/components/TenderCard
 import TenderModal from "@/features/log/tenders/components/TenderModal";
 import { TenderCardClients } from "@/features/dashboard/tender/components/TenderCardClient";
 import { useTenderListClient } from "@/features/dashboard/hooks/useTenderListClient";
+import { TenderFilters } from "@/features/log/tenders/components/TenderFilters";
 
 export default function ClientsTenderPage() {
   const { tenders, isLoading, error } = useTenderListClient();
@@ -26,6 +27,8 @@ export default function ClientsTenderPage() {
         tenderId={selectedTender?.id}
         onClose={() => setSelectedTender(null)}
       />
+
+      <TenderFilters/>
 
       {/* Список карток */}
       <div className="flex flex-col divide-y divide-gray-200 dark:divide-slate-700">

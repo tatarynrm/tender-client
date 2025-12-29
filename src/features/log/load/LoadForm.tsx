@@ -35,8 +35,11 @@ import { Minus, Plus } from "lucide-react";
 import { MyTooltip } from "@/shared/components/Tooltips/MyTooltip";
 import { useRouter } from "next/navigation";
 import { useLoads } from "../hooks/useLoads";
-import { connectSocket, getSocket } from "@/sockets/socketManager";
+
 import { useAuth } from "@/shared/providers/AuthCheckProvider";
+import { GoogleLocationInput } from "@/shared/components/google-location-input/GoogleLocationInput";
+
+import { getSocket } from "@/shared/lib/socket";
 
 // ---------- Schemas ----------
 const routeSchema = z.object({
@@ -173,13 +176,14 @@ export default function LoadForm({
   const router = useRouter();
   const { refetch } = useLoads();
   const { profile } = useAuth();
-  const socket = connectSocket("load");
+  // const socket = connectSocket('user');
+  const socket = getSocket("chat");
 
   const form = useForm<CargoServerFormValues>({
     resolver: zodResolver(cargoServerSchema),
     defaultValues: {
       load_info: "",
-      ids_valut: '',
+      ids_valut: "",
       id_client: null,
       crm_load_route_from: [
         {
@@ -234,13 +238,13 @@ export default function LoadForm({
     try {
       const { data } = await api.get("/form-data/getCreateCargoFormData");
       setValutList(
-        data.data.valut_dropdown.map((v: any) => ({
+        data.content.valut_dropdown.map((v: any) => ({
           value: v.ids,
           label: v.ids,
         }))
       );
       setTruckList(
-        data.data.trailer_type_dropdown.map((t: any) => ({
+        data.content.trailer_type_dropdown.map((t: any) => ({
           value: t.ids,
           label: t.value,
         }))
@@ -262,16 +266,15 @@ export default function LoadForm({
         ...values,
         ...(defaultValues?.id ? { id: defaultValues.id } : {}), // додаємо id, якщо він є
       };
-      console.log(payload, "PAYLOAD");
 
       const { data } = await api.post("/crm/load/save", payload);
 
-      if (Number(data.data[0])) {
+      if (Number(data.content[0])) {
         if (!isNextCargo) form.reset();
         if (defaultValues) {
           console.log(profile?.id, "PROFILE ID");
 
-          socket.emit("send_update", {
+          socket?.emit("send_update", {
             loadId: profile?.id,
             data: { status: "updated" },
           });
@@ -279,7 +282,7 @@ export default function LoadForm({
           router.push("/log/cargo/active");
           refetch();
         } else {
-          socket.emit("send_update", {
+          socket?.emit("send_update", {
             loadId: profile?.id,
             data: { status: "updated" },
           });
@@ -349,7 +352,7 @@ export default function LoadForm({
                           {`Адреса завантаження #${idx + 1}`}
                         </FormLabel>
                         <FormControl>
-                          <NominatimInput
+                          {/* <NominatimInput
                             value={formField.value} // беремо value прямо з RHF
                             placeholder="Введіть адресу завантаження..."
                             onChange={(address, lat, lon, country, city) => {
@@ -361,6 +364,45 @@ export default function LoadForm({
                                 country
                               );
                               setValue(`crm_load_route_from.${idx}.city`, city);
+                              clearErrors(`crm_load_route_from.${idx}.address`);
+                            }}
+                          /> */}
+
+                          <GoogleLocationInput
+                            value={formField.value} // беремо value прямо з RHF
+                            placeholder="Введіть адресу завантаження..."
+                            onChange={(location) => {
+                              // Формуємо відображувану адресу для input
+                              const address = location.street
+                                ? `${location.street}${
+                                    location.house ? `, ${location.house}` : ""
+                                  }`
+                                : location.city || "";
+
+                              // Оновлюємо value поля в RHF
+                              formField.onChange(address);
+
+                              // Окремо ставимо lat/lng
+                              setValue(
+                                `crm_load_route_from.${idx}.lat`,
+                                location.lat
+                              );
+                              setValue(
+                                `crm_load_route_from.${idx}.lon`,
+                                location.lng
+                              );
+
+                              // Окремо ставимо country/city
+                              setValue(
+                                `crm_load_route_from.${idx}.country`,
+                                location.countryCode
+                              );
+                              setValue(
+                                `crm_load_route_from.${idx}.city`,
+                                location.city
+                              );
+
+                              // Очищаємо помилку, якщо була
                               clearErrors(`crm_load_route_from.${idx}.address`);
                             }}
                           />
@@ -420,13 +462,13 @@ export default function LoadForm({
                   <FormField
                     control={control}
                     name={`crm_load_route_to.${idx}.address`}
-                    render={() => (
+                    render={({ field: formField }) => (
                       <FormItem className="flex-1">
                         <FormLabel>
                           {`Адреса розвантаження #${idx + 1}`}
                         </FormLabel>
                         <FormControl>
-                          <NominatimInput
+                          {/* <NominatimInput
                             value={watch(`crm_load_route_to.${idx}.address`)}
                             placeholder="Введіть адресу розвантаження..."
                             onChange={(address, lat, lon, country, city) => {
@@ -441,6 +483,45 @@ export default function LoadForm({
                                 country
                               );
                               setValue(`crm_load_route_to.${idx}.city`, city);
+                              clearErrors(`crm_load_route_to.${idx}.address`);
+                            }}
+                          /> */}
+
+                          <GoogleLocationInput
+                            value={formField.value} // беремо value прямо з RHF
+                            placeholder="Введіть адресу завантаження..."
+                            onChange={(location) => {
+                              // Формуємо відображувану адресу для input
+                              const address = location.street
+                                ? `${location.street}${
+                                    location.house ? `, ${location.house}` : ""
+                                  }`
+                                : location.city || "";
+
+                              // Оновлюємо value поля в RHF
+                              formField.onChange(address);
+
+                              // Окремо ставимо lat/lng
+                              setValue(
+                                `crm_load_route_to.${idx}.lat`,
+                                location.lat
+                              );
+                              setValue(
+                                `crm_load_route_to.${idx}.lon`,
+                                location.lng
+                              );
+
+                              // Окремо ставимо country/city
+                              setValue(
+                                `crm_load_route_to.${idx}.country`,
+                                location.countryCode
+                              );
+                              setValue(
+                                `crm_load_route_to.${idx}.city`,
+                                location.city
+                              );
+
+                              // Очищаємо помилку, якщо була
                               clearErrors(`crm_load_route_to.${idx}.address`);
                             }}
                           />
@@ -568,8 +649,8 @@ export default function LoadForm({
                       )
                     )}
                     onChange={(options: any) => {
-                      console.log(options,'OPTIONS');
-                      
+                      console.log(options, "OPTIONS");
+
                       field.onChange(
                         options
                           ? options.map((o: any) => ({
@@ -721,7 +802,7 @@ export default function LoadForm({
                     <Select
                       // disabled={isLoadingRegister}
                       value={field.value?.toString() || ""}
-                      onValueChange={(val) => field.onChange((val))}
+                      onValueChange={(val) => field.onChange(val)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Вкажіть валюту" />

@@ -1,51 +1,81 @@
-// sockets/SocketProvider.tsx
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import type { Socket } from "socket.io-client";
-import { connectSocket } from "@/sockets/socketManager";
-import { useAuth } from "@/shared/providers/AuthCheckProvider";
-import { useRouter } from "next/navigation";
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+  useState,
+} from "react";
+import { io, Socket } from "socket.io-client";
 
-const SocketContext = createContext<Socket | null>(null);
+export type Namespace = "chat" | "tender" | "user" | "load";
+type Sockets = Record<Namespace, Socket | null>;
 
-export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
-  const { profile } = useAuth();
-  const router = useRouter();
-  const [socket, setSocket] = useState<Socket | null>(null);
+const SocketContext = createContext<Sockets | null>(null);
+
+interface Props {
+  children: ReactNode;
+}
+
+export const SocketProvider = ({ children }: Props) => {
+  const [sockets, setSockets] = useState<Sockets>({
+    chat: null,
+    tender: null,
+    user: null,
+    load: null,
+  });
+
+  // Отримуємо userId із localStorage (після перезавантаження сторінки)
+  const userId =
+    typeof window !== "undefined" ? localStorage.getItem("socket") : null;
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!userId) return; // Якщо немає userId, не підключаємо сокети
 
-    const socket = connectSocket("user", {
-      auth: { userId: profile.id },
+    const chat = io(`${process.env.NEXT_PUBLIC_SERVER_URL}/chat`, {
+      transports: ["websocket"],
+      auth: { userId },
+      reconnection: true,
+      autoConnect: true,
     });
 
-    setSocket(socket);
-
-    socket.on("USER_BLOCKED", () => {
-      router.replace("/blocked");
+    const tender = io(`${process.env.NEXT_PUBLIC_SERVER_URL}/tender`, {
+      transports: ["websocket"],
+      auth: { userId },
+      reconnection: true,
+      autoConnect: true,
     });
+
+    const user = io(`${process.env.NEXT_PUBLIC_SERVER_URL}/user`, {
+      transports: ["websocket"],
+      auth: { userId },
+      reconnection: true,
+      autoConnect: true,
+    });
+    const load = io(`${process.env.NEXT_PUBLIC_SERVER_URL}/load`, {
+      transports: ["websocket"],
+      auth: { userId },
+      reconnection: true,
+      autoConnect: true,
+    });
+
+    setSockets({ chat, tender, user, load });
 
     return () => {
-      socket.off("USER_BLOCKED");
-      // ❌ НЕ disconnect
+      chat.disconnect();
+      tender.disconnect();
+      user.disconnect();
     };
-  }, [profile?.id, router]);
+  }, [userId]); // Підключаємо сокети, коли userId змінюється
 
   return (
-    <SocketContext.Provider value={socket}>
-      {children}
-    </SocketContext.Provider>
+    <SocketContext.Provider value={sockets}>{children}</SocketContext.Provider>
   );
 };
 
-export const useSocket = () => {
-  const socket = useContext(SocketContext);
-
-  if (!socket) {
-    throw new Error("useSocket must be used inside SocketProvider");
-  }
-
-  return socket;
+export const useSockets = () => {
+  const ctx = useContext(SocketContext);
+  if (!ctx) throw new Error("useSockets must be used within SocketProvider");
+  return ctx;
 };

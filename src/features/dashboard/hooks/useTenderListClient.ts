@@ -1,59 +1,67 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+
 import { ITender } from "@/features/log/types/tender.type";
 import { tenderClientsService } from "../services/tender.clients.service";
 
-import { connectSocket, setSocketUserId } from "@/sockets/socketManager";
 import { useAuth } from "@/shared/providers/AuthCheckProvider";
+import { getSocket } from "@/shared/lib/socket";
+import { useSockets } from "@/shared/providers/SocketProvider";
 
 export const useTenderListClient = () => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const search = searchParams.get("search") ?? "";
+  const status = searchParams.get("status") ?? "";
+  const { tender } = useSockets();
+  // 🔹 формуємо params стабільно
+  const params = useMemo(() => {
+    const p = new URLSearchParams();
+    if (search) p.set("search", search);
+    if (status) p.set("status", status);
+    return p;
+  }, [search, status]);
 
-  // 1️⃣ Запит тендерів
   const {
     data: tenders = [],
     isLoading,
     error,
-    refetch,
   } = useQuery<ITender[]>({
-    queryKey: ["tenders"],
-    queryFn: tenderClientsService.getTenders,
-    staleTime: 1000 * 60, // кеш 1 хв
+    queryKey: ["tenders", search, status],
+    queryFn: () => tenderClientsService.getTenders(params),
+    staleTime: 1000 * 60,
   });
 
-  // 2️⃣ Підключення до сокета
+  // 3️⃣ Сокети
   useEffect(() => {
     if (!profile?.id) return;
-    // 🔑 Встановлюємо userId для сокета
-    setSocketUserId(profile.id);
-    // Створюємо або отримуємо існуючий сокет
-    const socket = connectSocket("user"); // 🔑 тут завжди буде сокет
-    console.log(socket, "SOCKET CONNECTED");
 
     const handleNewLoad = () => {
       queryClient.invalidateQueries({ queryKey: ["tenders"] });
     };
 
     const handleNewBid = (updatedTender: ITender) => {
-      queryClient.setQueryData<ITender[]>(["tenders"], (old = []) =>
-        old.map((t) => (t.id === updatedTender.id ? updatedTender : t))
+      queryClient.setQueryData<ITender[]>(
+        ["tenders", search, status],
+        (old = []) =>
+          old.map((t) => (t.id === updatedTender.id ? updatedTender : t))
       );
+
       queryClient.setQueryData(["tender", updatedTender.id], updatedTender);
     };
 
-    // Підписка на події
-    socket.on("new_load", handleNewLoad);
-    socket.on("new_bid", handleNewBid);
+    tender?.on("new_load", handleNewLoad);
+    tender?.on("new_bid", handleNewBid);
 
     return () => {
-      socket.off("new_load", handleNewLoad);
-      socket.off("new_bid", handleNewBid);
-      // Не відключаємо socket, залишаємо для глобального використання
+      tender?.off("new_load", handleNewLoad);
+      tender?.off("new_bid", handleNewBid);
     };
-  }, [profile?.id, queryClient]);
+  }, [profile?.id, queryClient, search, status]);
 
-  return { tenders, isLoading, error, refetch };
+  return { tenders, isLoading, error };
 };

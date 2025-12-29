@@ -2,7 +2,7 @@
 import { Key, ReactNode, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/shared/providers/AuthCheckProvider";
-import { connectSocket } from "@/sockets/socketManager";
+
 import api from "@/shared/api/instance.api";
 import { SettingsCard } from "./SettingsCard";
 import { Label, Switch } from "@/shared/components/ui";
@@ -143,29 +143,6 @@ export const TelegramNotifications = ({ profile, setProfile }: any) => {
 
     fetchToken();
   }, [profile?.email]);
-
-  // ⚡ Підключення сокета
-  useEffect(() => {
-    if (!profile?.id || socketRef.current) return;
-
-    const socket = connectSocket("telegram", { query: { userId: profile.id } });
-    socketRef.current = socket;
-
-    socket.on("TELEGRAM_CONNECTED", (data: any) => {
-      console.log("✅ TELEGRAM_CONNECTED:", data);
-      setProfile((prev: any) => ({ ...prev, telegram_id: 0 }));
-    });
-
-    socket.on("TELEGRAM_DISCONNECTED", () => {
-      console.log("❌ TELEGRAM_DISCONNECTED");
-      setProfile((prev: any) => ({ ...prev, telegram_id: null }));
-    });
-
-    return () => {
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, [profile?.id, setProfile]);
 
   // 🔄 Рендеринг
   if (!profile?.telegram_id) {
